@@ -3,7 +3,7 @@ image:
   repository: ghcr.io/arpitsinghal-devops/secureship-app
   # Set automatically by the secureship-app pipeline after the image is signed.
   # Deploying by digest (not tag) means what was scanned and signed is exactly what runs.
-  digest: "sha256:19fa7ff231b940f04a737762e8e68b833e386b6068bcc02364557391648722dc"
+  digest: "sha256:10d37d256492d1e91908f9d72c21aaf1c19df470b033acd4fe77305ab800877e"
 service:
   port: 80
   targetPort: 8080
