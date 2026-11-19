@@ -1,0 +1,42 @@
+name: gitops-lint
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  TRIVY_IMAGE: aquasec/trivy:0.76.2
+  KYVERNO_CLI_IMAGE: ghcr.io/kyverno/kyverno-cli:v1.20.0
+  # Placeholder digest so the chart renders on PRs before the first deploy.
+  TEST_DIGEST: sha256:0000000000000000000000000000000000000000000000000000000000000000
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: azure/setup-helm@2f5e7bc67f1f9972ab16657bb795f36d8f04de0e # v5.1.0
+
+      - name: Helm lint and render
+        run: |
+          helm lint chart/secureship --set image.digest="$TEST_DIGEST"
+          helm template secureship chart/secureship -n secureship \
+            --set image.digest="$TEST_DIGEST" > rendered.yaml
+
+      - name: IaC misconfiguration scan (Trivy config)
+        run: |
+          docker run --rm -v "$PWD:/src" "$TRIVY_IMAGE" config \
+            --helm-set image.digest="$TEST_DIGEST" \
+            --severity HIGH,CRITICAL --exit-code 1 /src/chart
+
+      - name: Kyverno policy tests
+        run: docker run --rm -v "$PWD:/w" -w /w "$KYVERNO_CLI_IMAGE" test tests/
+
+      - name: Rendered chart passes pod-hardening policy
+        run: |
+          docker run --rm -v "$PWD:/w" -w /w "$KYVERNO_CLI_IMAGE" apply policies/pod-hardening.yaml \
+            --resource rendered.yaml --values-file tests/values.yaml

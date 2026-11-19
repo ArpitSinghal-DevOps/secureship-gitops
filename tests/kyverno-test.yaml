@@ -1,0 +1,21 @@
+# Run with: kyverno test tests/
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: secureship-pod-hardening
+policies:
+  - ../policies/pod-hardening.yaml
+resources:
+  - resources.yaml
+variables: values.yaml
+results:
+  - policy: secureship-pod-hardening
+    isValidatingPolicy: true
+    kind: Pod
+    resources: [hardened-pod]
+    result: pass
+  - policy: secureship-pod-hardening
+    isValidatingPolicy: true
+    kind: Pod
+    resources: [latest-tag-pod, no-limits-pod, root-pod]
+    result: fail

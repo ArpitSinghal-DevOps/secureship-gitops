@@ -1,0 +1,6 @@
+apiVersion: v2
+name: secureship
+description: Hardened Helm chart for the SecureShip sample service
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

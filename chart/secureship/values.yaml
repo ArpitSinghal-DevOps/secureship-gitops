@@ -1,0 +1,25 @@
+replicaCount: 2
+
+image:
+  repository: ghcr.io/arpitsinghal-devops/secureship-app
+  # Set automatically by the secureship-app pipeline after the image is signed.
+  # Deploying by digest (not tag) means what was scanned and signed is exactly what runs.
+  digest: ""
+
+service:
+  port: 80
+  targetPort: 8080
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 250m
+    memory: 128Mi
+
+serviceMonitor:
+  enabled: true
+
+dashboard:
+  enabled: true

@@ -1,0 +1,64 @@
+# Mirrors the pod spec produced by chart/secureship.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hardened-pod
+  namespace: secureship
+spec:
+  securityContext:
+    runAsNonRoot: true
+  containers:
+    - name: app
+      image: ghcr.io/example/secureship-app@sha256:0000000000000000000000000000000000000000000000000000000000000000
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+      resources:
+        limits: { cpu: 250m, memory: 128Mi }
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: latest-tag-pod
+  namespace: secureship
+spec:
+  securityContext:
+    runAsNonRoot: true
+  containers:
+    - name: app
+      image: nginx:latest
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+      resources:
+        limits: { cpu: 250m, memory: 128Mi }
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: no-limits-pod
+  namespace: secureship
+spec:
+  securityContext:
+    runAsNonRoot: true
+  containers:
+    - name: app
+      image: ghcr.io/example/secureship-app@sha256:0000000000000000000000000000000000000000000000000000000000000000
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: root-pod
+  namespace: secureship
+spec:
+  containers:
+    - name: app
+      image: ghcr.io/example/secureship-app@sha256:0000000000000000000000000000000000000000000000000000000000000000
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+      resources:
+        limits: { cpu: 250m, memory: 128Mi }
