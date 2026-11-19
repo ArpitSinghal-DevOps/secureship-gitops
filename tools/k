@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# kubectl without installing kubectl: runs the binary that ships inside the minikube node container.
+# Usage: tools/k get pods -A        |   tools/k apply -f - < file.yaml
+# Port-forward: tools/k -n argocd port-forward --address 0.0.0.0 svc/argocd-server 8080:443
+#               then open https://$(tools/node-ip):8080 on the laptop.
+set -euo pipefail
+NODE="${NODE:-secureship}"
+KVER=$(docker exec "$NODE" ls /var/lib/minikube/binaries | sort -V | tail -1)
+TTY=()
+[[ -t 0 && -t 1 ]] && TTY=(-t)
+exec docker exec -i "${TTY[@]}" "$NODE" \
+  "/var/lib/minikube/binaries/$KVER/kubectl" --kubeconfig=/etc/kubernetes/admin.conf "$@"

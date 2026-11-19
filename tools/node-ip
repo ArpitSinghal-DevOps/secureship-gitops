@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# IP of the minikube node container; reachable from the laptop on Linux.
+exec docker inspect -f "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" "${NODE:-secureship}"
