@@ -8,6 +8,10 @@ metadata:
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
   validationActions: [Deny]
+  # Signature checks call GHCR, Rekor and the Sigstore TUF root; the 10s default is too
+  # short for a cold cache. 30s is the Kubernetes maximum for admission webhooks.
+  webhookConfiguration:
+    timeoutSeconds: 30
   matchConstraints:
     namespaceSelector:
       matchLabels:
