@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Run any toolbox CLI (gh, git, cosign, yq) in a container, in the current directory.
+#   tools/run gh auth login          (once; the login is kept in the "secureship-toolbox-home" volume)
+#   tools/run git push
+#   tools/run gh run list -R <you>/secureship-app
+set -euo pipefail
+HERE="$(cd "$(dirname "$0")" && pwd)"
+IMAGE=secureship-toolbox:local
+
+if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
+  docker build -q -t "$IMAGE" --build-arg UID="$(id -u)" --build-arg GID="$(id -g)" "$HERE" >/dev/null
+fi
+
+TTY=()
+[[ -t 0 && -t 1 ]] && TTY=(-t)
+# Mount the parent folder that holds both repos, at the same path as on the laptop.
+ROOT="$(cd "$HERE/../.." && pwd)"
+exec docker run --rm -i "${TTY[@]}" \
+  -v secureship-toolbox-home:/home/tool \
+  -v "$ROOT:$ROOT" -w "$PWD" \
+  "$IMAGE" "$@"

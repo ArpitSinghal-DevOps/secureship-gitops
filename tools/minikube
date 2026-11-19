@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# minikube CLI from the toolbox container, driving the laptop's Docker through its socket.
+# The cluster itself is a Docker container named "secureship".
+#   tools/minikube start -p secureship ...    |   tools/minikube delete -p secureship
+set -euo pipefail
+HERE="$(cd "$(dirname "$0")" && pwd)"
+"$HERE/run" true # builds the toolbox image on first use
+exec docker run --rm -i \
+  --network host \
+  --group-add "$(stat -c %g /var/run/docker.sock)" \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v secureship-minikube:/home/tool/.minikube \
+  -e MINIKUBE_IN_STYLE=false \
+  secureship-toolbox:local minikube "$@"
