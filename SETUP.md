@@ -124,6 +124,11 @@ tools/k -n secureship port-forward --address 0.0.0.0 svc/secureship 8081:80   # 
 `../secureship-gitops/tools/run git push`. The pipeline runs, commits a new digest, and Argo CD rolls
 it out within about 3 minutes. Open the app URL to see the new response.
 
+**Branch protection.** `main` of `secureship-app` requires a pull request with all five scan/test/build
+checks green (no force-push, no deletion). As the repo admin you can still push directly; GitHub then
+reports "bypassed rule violations". `secureship-gitops` only blocks force-push and deletion, because the
+pipeline commits the digest there directly with its deploy key.
+
 **Demo 2: the pipeline blocks bad code.** On a new branch, open a pull request with each of these
 (one at a time) and watch the matching job fail:
 
