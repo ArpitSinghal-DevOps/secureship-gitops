@@ -57,7 +57,7 @@ up() {
       --storage.tsdb.retention.time=2d >/dev/null
 
   docker run -d --name "$GRAFANA" --network "$NET" \
-    --user "$(id -u):$(id -g)" --memory 256m --cpus 0.5 \
+    --user "$(id -u):$(id -g)" --memory 384m --cpus 0.5 \
     --security-opt no-new-privileges --cap-drop ALL \
     -p 127.0.0.1:3000:3000 \
     -e GF_SECURITY_ADMIN_PASSWORD="$(cat "$SECRETS/grafana-admin")" \
