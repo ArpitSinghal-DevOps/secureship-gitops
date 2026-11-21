@@ -11,6 +11,7 @@ Sigstore signing is free, and the cluster runs locally on minikube.
 | `tools/run gh ...`, `tools/run git ...`, `tools/run cosign ...` | gh, git, cosign v3, yq | toolbox image built from `tools/Dockerfile` |
 | `tools/minikube ...` | minikube | toolbox image, driving Docker through its socket |
 | `tools/node-ip` | prints the minikube node IP | `docker inspect` |
+| `tools/monitoring up\|down\|status\|purge` | Prometheus + Grafana | two containers on the minikube Docker network |
 
 The toolbox keeps your GitHub login in the Docker volume `secureship-toolbox-home`.
 Run the wrappers from inside `secureship-gitops/` (or give their path, e.g. `../secureship-gitops/tools/run`).
@@ -161,26 +162,36 @@ tools/run cosign verify ghcr.io/<you-lowercase>/secureship-app@<digest> \
   --certificate-identity-regexp '^https://github.com/<you>/secureship-app/'
 ```
 
-**Demo 6 (optional): monitoring.** Prometheus + Grafana are off by default because they do not fit
-next to the cluster on a 7-8 GB laptop. To turn them on, close other heavy apps, then:
+**Demo 6: monitoring.** Prometheus and Grafana run as two Docker containers next to the minikube
+container (about 250 MB RAM together, versus 1.5 GB+ for kube-prometheus-stack inside the cluster):
 
 ```bash
-tools/run git mv argocd/optional/monitoring.yaml argocd/apps/
-# set serviceMonitor.enabled and dashboard.enabled to true in chart/secureship/values.yaml
-tools/run git commit -am "enable monitoring" && tools/run git push
-tools/k -n monitoring port-forward --address 0.0.0.0 svc/monitoring-grafana 3000:80   # http://192.168.49.2:3000
+tools/monitoring up        # start; prints the URLs
+tools/monitoring status    # containers + scrape targets (both pods should be "up")
+tools/monitoring down      # stop (metrics kept in monitoring/.data)
+tools/monitoring purge     # stop and delete data, copied token and Grafana password
 ```
 
-Grafana user `admin`, password: `tools/k -n monitoring get secret monitoring-grafana -o jsonpath='{.data.admin-password}' | base64 -d`.
-Dashboard: **SecureShip**. To turn it off again, move the file back and add the finalizer
-`resources-finalizer.argocd.argoproj.io` to the `monitoring` Application first so its resources are deleted.
+- Grafana: http://localhost:3000, user `admin`, password in `monitoring/.secrets/grafana-admin`. The
+  **SecureShip** dashboard (request rate, errors, p95 latency, restarts) opens as the home page.
+- Prometheus: http://localhost:9090/targets
+- How it scrapes: the chart creates a read-only ServiceAccount `secureship-metrics-reader` (list pods and
+  `pods/proxy` in the `secureship` namespace only). `tools/monitoring up` copies its token and the cluster
+  CA into `monitoring/.secrets/` (git-ignored), and Prometheus reaches each pod's `/metrics` through the
+  API server proxy. Both containers run as your user, with all capabilities dropped and memory limits,
+  and are bound to `127.0.0.1` only.
+- Run `tools/monitoring up` again after a new cluster or `purge`. `docker stop secureship` does not stop
+  them, so run `tools/monitoring down` too to free the RAM.
+
+(The heavier in-cluster alternative is kept in `argocd/optional/monitoring.yaml`.)
 
 ## Step 7: Polish the GitHub repos
 
 - Screenshots to add to `secureship-app/README.md`: the green pipeline, a failed scan, the Kyverno denial,
   the Argo CD app tree (and the Grafana dashboard if enabled).
 - Pin both repos on your GitHub profile.
-- Stop the cluster when not in use: `docker stop secureship`. Start again: `./scripts/bootstrap.sh`.
+- Stop everything when not in use: `tools/monitoring down; docker stop secureship`.
+  Start again: `./scripts/bootstrap.sh && tools/monitoring up`.
 - Delete everything: `docker rm -f secureship && docker volume rm secureship && docker network rm secureship`.
 
 ## Troubleshooting

@@ -9,9 +9,11 @@ argocd/
   apps/kyverno.yaml      Kyverno 1.20 admission controller      (sync wave -2)
   apps/policies.yaml     policies/ folder                        (wave -1)
   apps/secureship.yaml   chart/secureship                        (wave 0)
-  optional/monitoring.yaml  kube-prometheus-stack; move into apps/ to enable
+  optional/monitoring.yaml  in-cluster kube-prometheus-stack (heavier alternative)
 chart/secureship/        hardened Helm chart: Deployment, Service, NetworkPolicy,
-                         ServiceMonitor, Grafana dashboard
+                         read-only metrics ServiceAccount, Grafana dashboard
+monitoring/              Prometheus + Grafana config for the Docker setup
+                         (tools/monitoring up: scrapes pods via the API server proxy)
 policies/
   verify-image-signature.yaml   ImageValidatingPolicy: only images signed by the
                                 secureship-app workflow on main may run
@@ -19,7 +21,8 @@ policies/
                                 limits, non-root, no privilege escalation, read-only FS
 tests/                   Kyverno CLI tests for the policies (run in CI)
 scripts/bootstrap.sh     minikube + Argo CD bootstrap (needs only Docker)
-tools/                   containerised CLIs: k (kubectl), run (gh/git/cosign/yq), minikube
+tools/                   containerised CLIs: k (kubectl), run (gh/git/cosign/yq), minikube,
+                         monitoring (Prometheus + Grafana containers)
 ```
 
 `chart/secureship/values.yaml → image.digest` is written by the app pipeline after the image is
