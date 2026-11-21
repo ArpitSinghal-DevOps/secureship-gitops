@@ -1,0 +1,50 @@
+{{- if .Values.metricsReader.enabled }}
+# Read-only identity for the Prometheus container that runs in Docker outside the cluster.
+# It can list the app's pods and read their /metrics through the API server proxy, nothing else.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Release.Name }}-metrics-reader
+  labels:
+    {{- include "secureship.labels" . | nindent 4 }}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Release.Name }}-metrics-reader
+  labels:
+    {{- include "secureship.labels" . | nindent 4 }}
+  annotations:
+    kubernetes.io/service-account.name: {{ .Release.Name }}-metrics-reader
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ .Release.Name }}-metrics-reader
+  labels:
+    {{- include "secureship.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods/proxy"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ .Release.Name }}-metrics-reader
+  labels:
+    {{- include "secureship.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ .Release.Name }}-metrics-reader
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Release.Name }}-metrics-reader
+    namespace: {{ .Release.Namespace }}
+{{- end }}
