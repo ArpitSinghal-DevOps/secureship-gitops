@@ -14,8 +14,11 @@ resources:
   limits:
     cpu: 250m
     memory: 128Mi
-# Monitoring is off by default to fit a 7-8 GB laptop. To turn it on:
-#   git mv argocd/optional/monitoring.yaml argocd/apps/  and set both flags to true.
+# Monitoring runs in Docker next to the cluster (see monitoring/ and tools/monitoring).
+# This creates the read-only ServiceAccount that Prometheus uses to scrape the pods.
+metricsReader:
+  enabled: true
+# Only for the in-cluster alternative (argocd/optional/monitoring.yaml, needs more RAM).
 serviceMonitor:
   enabled: false
 dashboard:

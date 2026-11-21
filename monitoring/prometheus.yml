@@ -1,0 +1,46 @@
+# Prometheus runs in Docker outside the cluster (tools/monitoring up).
+# It discovers the app pods through the Kubernetes API and scrapes each pod's /metrics
+# through the API server proxy, using the read-only secureship-metrics-reader ServiceAccount.
+# The token and CA are written to /etc/prometheus/secrets by tools/monitoring (never committed).
+global:
+  scrape_interval: 15s
+  evaluation_interval: 30s
+
+scrape_configs:
+  - job_name: secureship
+    scheme: https
+    authorization:
+      credentials_file: /etc/prometheus/secrets/token
+    tls_config:
+      ca_file: /etc/prometheus/secrets/ca.crt
+    kubernetes_sd_configs:
+      - role: pod
+        api_server: https://control-plane.minikube.internal:8443
+        namespaces:
+          names: [secureship]
+        authorization:
+          credentials_file: /etc/prometheus/secrets/token
+        tls_config:
+          ca_file: /etc/prometheus/secrets/ca.crt
+    relabel_configs:
+      # Only the app's running pods, on the app port.
+      - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+        regex: secureship
+        action: keep
+      - source_labels: [__meta_kubernetes_pod_phase]
+        regex: Running
+        action: keep
+      - source_labels: [__meta_kubernetes_pod_container_port_number]
+        regex: "8080"
+        action: keep
+      # Scrape https://<api-server>/api/v1/namespaces/<ns>/pods/<pod>:8080/proxy/metrics
+      - target_label: __address__
+        replacement: control-plane.minikube.internal:8443
+      - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_pod_name]
+        regex: (.+);(.+)
+        target_label: __metrics_path__
+        replacement: /api/v1/namespaces/${1}/pods/${2}:8080/proxy/metrics
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: namespace
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
