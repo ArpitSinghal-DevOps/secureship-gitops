@@ -1,5 +1,6 @@
-# Only images signed (keyless, Sigstore) by the secureship-app GitHub Actions
-# workflow on the main branch may run in the secureship namespace.
+# Only images signed (keyless, Sigstore) by the secureship-app GitHub Actions workflow on the
+# main branch, and carrying an SBOM attested by that same workflow, may run in the secureship
+# namespace. Every container list is checked: app, init and ephemeral containers.
 apiVersion: policies.kyverno.io/v1
 kind: ImageValidatingPolicy
 metadata:
@@ -20,7 +21,7 @@ spec:
       - apiGroups: [""]
         apiVersions: ["v1"]
         operations: ["CREATE", "UPDATE"]
-        resources: ["pods"]
+        resources: ["pods", "pods/ephemeralcontainers"]
   matchImageReferences:
     - glob: "*"
   attestors:
@@ -32,7 +33,18 @@ spec:
               subjectRegExp: '(?i)^https://github\.com/ArpitSinghal-DevOps/secureship-app/\.github/workflows/ci\.yml@refs/heads/main$'
         ctlog:
           url: https://rekor.sigstore.dev
+  attestations:
+    - name: sbom
+      intoto:
+        type: https://spdx.dev/Document # predicate type written by `cosign attest --type spdxjson`
+  variables:
+    - name: allImages
+      expression: >-
+        (object.spec.containers
+          + object.spec.?initContainers.orValue([])
+          + object.spec.?ephemeralContainers.orValue([])).map(c, c.image)
   validations:
-    - expression: >-
-        images.containers.map(image, verifyImageSignatures(image, [attestors.github])).all(e, e > 0)
+    - expression: "variables.allImages.all(image, verifyImageSignatures(image, [attestors.github]) > 0)"
       message: "image is not signed by the secureship-app CI pipeline (main branch)"
+    - expression: "variables.allImages.all(image, verifyAttestationSignatures(image, attestations.sbom, [attestors.github]) > 0)"
+      message: "image has no SPDX SBOM attested by the secureship-app CI pipeline (main branch)"

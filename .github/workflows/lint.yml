@@ -33,10 +33,17 @@ jobs:
             --helm-set image.digest="$TEST_DIGEST" \
             --severity HIGH,CRITICAL --exit-code 1 /src/chart
 
+      # Includes tests/signature/, which checks real images against GHCR and Sigstore.
       - name: Kyverno policy tests
         run: docker run --rm -v "$PWD:/w" -w /w "$KYVERNO_CLI_IMAGE" test tests/
 
+      # The policy matches Pods, so the Deployment's pod template is extracted into a Pod first;
+      # applying it to the Deployment itself would match nothing and pass silently.
       - name: Rendered chart passes pod-hardening policy
         run: |
+          yq 'select(.kind == "Deployment") | {"apiVersion": "v1", "kind": "Pod",
+            "metadata": {"name": "rendered-chart-pod", "namespace": "secureship"},
+            "spec": .spec.template.spec}' rendered.yaml > rendered-pod.yaml
           docker run --rm -v "$PWD:/w" -w /w "$KYVERNO_CLI_IMAGE" apply policies/pod-hardening.yaml \
-            --resource rendered.yaml --values-file tests/values.yaml
+            --resource rendered-pod.yaml --values-file tests/values.yaml | tee result.txt
+          grep -q "pass: 1, fail: 0" result.txt # fail if nothing was evaluated

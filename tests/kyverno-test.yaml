@@ -12,10 +12,10 @@ results:
   - policy: secureship-pod-hardening
     isValidatingPolicy: true
     kind: Pod
-    resources: [hardened-pod]
+    resources: [hardened-pod, hardened-init-pod]
     result: pass
   - policy: secureship-pod-hardening
     isValidatingPolicy: true
     kind: Pod
-    resources: [latest-tag-pod, no-limits-pod, root-pod]
+    resources: [latest-tag-pod, no-limits-pod, root-pod, unpinned-init-pod, ephemeral-pod]
     result: fail
