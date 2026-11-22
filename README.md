@@ -18,6 +18,7 @@ policies/
   verify-image-signature.yaml   ImageValidatingPolicy: every image (app, init, ephemeral
                                 containers) must be signed by the secureship-app workflow
                                 on main and carry an SBOM attested by it
+  kyverno-rbac.yaml             lets Kyverno read pods/ephemeralcontainers (policy readiness)
   pod-hardening.yaml            ValidatingPolicy: digest-pinned images, CPU/memory
                                 limits, non-root, no privilege escalation, read-only FS
                                 (init containers included); no ephemeral debug containers
