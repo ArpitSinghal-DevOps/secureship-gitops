@@ -81,6 +81,7 @@ cd ~/Personal/projects/secureship/secureship-app
 | Push | GHCR | (main branch only) |
 | Sign | Cosign keyless (GitHub OIDC) | (main branch only) |
 | SBOM | Syft, attested with Cosign | (main branch only) |
+| Provenance | SLSA build provenance (GitHub artifact attestation), then signature, SBOM and provenance re-verified | (main branch only) |
 | Promote | commits the digest to `secureship-gitops` | (main branch only) |
 
 The image package inherits the public visibility of the repo (the pipeline sets the
@@ -201,6 +202,7 @@ tools/monitoring purge     # stop and delete data, copied token and Grafana pass
 | Argo CD app `secureship` errors with "image.digest is empty" | The app pipeline has not finished on main yet (step 4). |
 | `update-gitops` job fails with a permission error | The `GITOPS_DEPLOY_KEY` secret is missing, or the deploy key lacks write access (step 3). |
 | Pods denied with "no signatures found" or `ImagePullBackOff` | The GHCR package is private (see step 4). |
+| Pods denied with "required predicate type https://spdx.dev/Document not found" | The image was signed but its SBOM step did not finish: re-run the pipeline. |
 | Pods denied even though signed | The repo must be named exactly `secureship-app` and the workflow `ci.yml` on `main`; the policy matches that identity. |
 | `tools/k` hangs or "TLS handshake timeout" | The laptop is out of RAM: close heavy apps, keep monitoring off, or `MEMORY=4g ./scripts/bootstrap.sh` for a new cluster. |
 | Trivy image scan fails later on a new CVE | That is the gate working: re-run the pipeline (the Dockerfile applies OS patches) or bump the base image. |
@@ -209,8 +211,9 @@ tools/monitoring purge     # stop and delete data, copied token and Grafana pass
 
 - Built a GitOps delivery platform with GitHub Actions, Helm and Argo CD (app-of-apps, self-healing),
   gating every commit on secret scanning (Gitleaks), SAST (Semgrep), SCA and image scanning (Trivy) and DAST (OWASP ZAP).
-- Secured the software supply chain with keyless image signing and SBOM attestation (Cosign, Syft, Sigstore),
-  deploying by immutable digest only.
-- Enforced signature verification and pod hardening at admission with Kyverno CEL policies (ImageValidatingPolicy,
-  ValidatingPolicy), covered by automated policy tests in CI; default-deny Calico NetworkPolicies.
+- Secured the software supply chain with keyless image signing, SBOM attestation and SLSA build provenance
+  (Cosign, Syft, Sigstore, GitHub artifact attestations), deploying by immutable digest only.
+- Enforced signature and SBOM-attestation verification and pod hardening at admission with Kyverno CEL policies
+  (ImageValidatingPolicy, ValidatingPolicy) across app, init and ephemeral containers, closing an init-container
+  bypass; covered by automated policy tests in CI; default-deny Calico NetworkPolicies.
 - Containerised the entire operator toolchain (kubectl, minikube, gh, cosign) so the platform runs with only Docker on the host.

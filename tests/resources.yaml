@@ -62,3 +62,74 @@ spec:
         readOnlyRootFilesystem: true
       resources:
         limits: { cpu: 250m, memory: 128Mi }
+---
+# A hardened init container is allowed.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hardened-init-pod
+  namespace: secureship
+spec:
+  securityContext:
+    runAsNonRoot: true
+  initContainers:
+    - name: init
+      image: ghcr.io/example/secureship-app@sha256:0000000000000000000000000000000000000000000000000000000000000000
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+      resources:
+        limits: { cpu: 100m, memory: 64Mi }
+  containers:
+    - name: app
+      image: ghcr.io/example/secureship-app@sha256:0000000000000000000000000000000000000000000000000000000000000000
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+      resources:
+        limits: { cpu: 250m, memory: 128Mi }
+---
+# The app container is hardened, but the init container uses a mutable tag with no limits.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: unpinned-init-pod
+  namespace: secureship
+spec:
+  securityContext:
+    runAsNonRoot: true
+  initContainers:
+    - name: init
+      image: nginx:latest
+  containers:
+    - name: app
+      image: ghcr.io/example/secureship-app@sha256:0000000000000000000000000000000000000000000000000000000000000000
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+      resources:
+        limits: { cpu: 250m, memory: 128Mi }
+---
+# What `kubectl debug` produces: a hardened pod plus an ephemeral container.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ephemeral-pod
+  namespace: secureship
+spec:
+  securityContext:
+    runAsNonRoot: true
+  containers:
+    - name: app
+      image: ghcr.io/example/secureship-app@sha256:0000000000000000000000000000000000000000000000000000000000000000
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+      resources:
+        limits: { cpu: 250m, memory: 128Mi }
+  ephemeralContainers:
+    - name: debugger
+      image: busybox@sha256:0000000000000000000000000000000000000000000000000000000000000000
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true

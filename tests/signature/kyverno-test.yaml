@@ -1,0 +1,21 @@
+# Signature + SBOM attestation checks against real images (needs network).
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: verify-secureship-signature
+policies:
+  - ../../policies/verify-image-signature.yaml
+resources:
+  - resources.yaml
+variables: ../values.yaml
+results:
+  - policy: verify-secureship-signature
+    isImageValidatingPolicy: true
+    kind: Pod
+    resources: [signed-pod]
+    result: pass
+  - policy: verify-secureship-signature
+    isImageValidatingPolicy: true
+    kind: Pod
+    resources: [unsigned-pod, unsigned-init-pod]
+    result: fail
