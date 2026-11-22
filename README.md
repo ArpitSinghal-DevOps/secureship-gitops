@@ -15,11 +15,14 @@ chart/secureship/        hardened Helm chart: Deployment, Service, NetworkPolicy
 monitoring/              Prometheus + Grafana config for the Docker setup
                          (tools/monitoring up: scrapes pods via the API server proxy)
 policies/
-  verify-image-signature.yaml   ImageValidatingPolicy: only images signed by the
-                                secureship-app workflow on main may run
+  verify-image-signature.yaml   ImageValidatingPolicy: every image (app, init, ephemeral
+                                containers) must be signed by the secureship-app workflow
+                                on main and carry an SBOM attested by it
   pod-hardening.yaml            ValidatingPolicy: digest-pinned images, CPU/memory
                                 limits, non-root, no privilege escalation, read-only FS
+                                (init containers included); no ephemeral debug containers
 tests/                   Kyverno CLI tests for the policies (run in CI)
+tests/signature/         signature + SBOM tests against real images (needs network)
 scripts/bootstrap.sh     minikube + Argo CD bootstrap (needs only Docker)
 tools/                   containerised CLIs: k (kubectl), run (gh/git/cosign/yq), minikube,
                          monitoring (Prometheus + Grafana containers)
@@ -32,7 +35,8 @@ scanned and signed. Nobody edits it by hand.
 
 - `helm lint` and render
 - Trivy config scan of the chart (HIGH/CRITICAL fails)
-- Kyverno policy unit tests, plus the rendered chart checked against the pod-hardening policy
+- Kyverno policy unit tests, including real signed and unsigned images
+- The rendered chart's pod template checked against the pod-hardening policy (fails if nothing was evaluated)
 
 ## Bootstrap
 

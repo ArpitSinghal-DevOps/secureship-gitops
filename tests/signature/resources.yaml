@@ -1,0 +1,35 @@
+# Needs network: these are checked against GHCR, Rekor and the Sigstore TUF root.
+# ghcr.io/arpitsinghal-devops/secureship-app@sha256:0e0d13c5d26d26593b11d5bd8f23d0c42884b1fd4a09ca19b44a9dab6c922a18 is an image built, signed and SBOM-attested by the secureship-app pipeline on main.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: signed-pod
+  namespace: secureship
+spec:
+  containers:
+    - name: app
+      image: ghcr.io/arpitsinghal-devops/secureship-app@sha256:0e0d13c5d26d26593b11d5bd8f23d0c42884b1fd4a09ca19b44a9dab6c922a18
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: unsigned-pod
+  namespace: secureship
+spec:
+  containers:
+    - name: app
+      image: nginx@sha256:6784fb0834aa7dbbe12e3d7471e69c290df3e6ba810dc38b34ae33d3c1c05f7d
+---
+# The bypass this policy closes: a signed app container next to an unsigned init container.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: unsigned-init-pod
+  namespace: secureship
+spec:
+  initContainers:
+    - name: init
+      image: nginx@sha256:6784fb0834aa7dbbe12e3d7471e69c290df3e6ba810dc38b34ae33d3c1c05f7d
+  containers:
+    - name: app
+      image: ghcr.io/arpitsinghal-devops/secureship-app@sha256:0e0d13c5d26d26593b11d5bd8f23d0c42884b1fd4a09ca19b44a9dab6c922a18
