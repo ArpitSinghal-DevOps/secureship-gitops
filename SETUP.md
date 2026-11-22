@@ -135,7 +135,7 @@ pipeline commits the digest there directly with its deploy key.
 (one at a time) and watch the matching job fail:
 
 ```bash
-echo "requests==2.19.0" >> requirements.txt                    # SCA fails (CVE-2018-18074)
+echo "python-multipart==0.0.6" >> requirements.txt              # SCA fails (CVE-2024-24762, HIGH)
 echo "TOKEN = \"ghp_$(openssl rand -hex 18)\"" > app/leak.py   # Gitleaks fails (fake GitHub token)
 ```
 
@@ -188,8 +188,8 @@ tools/monitoring purge     # stop and delete data, copied token and Grafana pass
 
 ## Step 7: Polish the GitHub repos
 
-- Screenshots to add to `secureship-app/README.md`: the green pipeline, a failed scan, the Kyverno denial,
-  the Argo CD app tree (and the Grafana dashboard if enabled).
+- Screenshots live in `secureship-app/docs/img/` (green pipeline, both demo PRs, Argo CD trees) and are
+  shown in the app README's "See it work" section. Retake them after big UI changes.
 - Pin both repos on your GitHub profile.
 - Stop everything when not in use: `tools/monitoring down; docker stop secureship`.
   Start again: `./scripts/bootstrap.sh && tools/monitoring up`.
