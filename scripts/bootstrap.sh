@@ -17,9 +17,12 @@ if grep -rq "GITHUB_USER" "$ROOT_DIR/argocd" "$ROOT_DIR/policies" "$ROOT_DIR/cha
   echo "GITHUB_USER placeholder still present. Run ../setup.sh <your-github-username> first."; exit 1
 fi
 
+# Always go through `minikube start`, also for an existing cluster: a bare `docker start` of the
+# node container skips minikube's restart steps (the control-plane /etc/hosts entry, kubelet), and
+# the API never comes up.
 if docker inspect "$PROFILE" >/dev/null 2>&1; then
-  echo "==> Cluster container '$PROFILE' exists, starting it"
-  docker start "$PROFILE" >/dev/null
+  echo "==> Cluster '$PROFILE' exists, restarting it with minikube"
+  "$ROOT_DIR/tools/minikube" start -p "$PROFILE"
 else
   echo "==> Creating minikube cluster '$PROFILE' (Calico, so NetworkPolicy is enforced)"
   "$ROOT_DIR/tools/minikube" start -p "$PROFILE" --driver=docker --cni=calico \
@@ -27,7 +30,12 @@ else
 fi
 
 echo "==> Waiting for the Kubernetes API"
-for _ in $(seq 1 60); do "$K" --request-timeout=5s get --raw /readyz >/dev/null 2>&1 && break; sleep 5; done
+ready=
+for _ in $(seq 1 60); do
+  "$K" --request-timeout=5s get --raw /readyz >/dev/null 2>&1 && { ready=1; break; }
+  sleep 5
+done
+[[ -n "$ready" ]] || { echo "Kubernetes API not ready after 5 minutes (low RAM? see SETUP.md troubleshooting)"; exit 1; }
 
 echo "==> Installing Argo CD $ARGOCD_VERSION"
 "$K" create namespace argocd --dry-run=client -o yaml | "$K" apply -f -
