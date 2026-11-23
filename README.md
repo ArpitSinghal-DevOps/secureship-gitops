@@ -2,6 +2,7 @@
 
 Desired state for the SecureShip platform, synced to the cluster by Argo CD.
 The application and its CI pipeline live in [secureship-app](https://github.com/ArpitSinghal-DevOps/secureship-app).
+Full architecture and step-by-step build guide: [ARCHITECTURE.md](https://github.com/ArpitSinghal-DevOps/secureship-app/blob/main/docs/ARCHITECTURE.md).
 
 ```
 argocd/
